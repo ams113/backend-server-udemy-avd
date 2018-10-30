@@ -38,7 +38,7 @@ app.post('/', (req, res) => {
 
         //crear token
         //payload + seed + fecha expiracion
-        console.log(SEED);
+        //console.log(SEED);
         var token = jwt.sign({ usuario: user}, SEED, {expiresIn: 14400}); //4 horas
 
         res.status(200).json({
