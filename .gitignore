@@ -1,2 +1,5 @@
 node_modules/
 google-signin-demo/node_modules/
+uploads/hospitales
+uploads/medicos
+uploads/usuarios

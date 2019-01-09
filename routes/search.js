@@ -11,7 +11,11 @@ var app = express();
 //  Buesqueda por colección
 // ===================================================
 
-app.get('/coleccion/:tabla/:buesqueda', (req, res) => {
+app.get('/coleccion/:tabla/:busqueda', (req, res) => {
+    var hasta = 5;
+    var desde = req.query.desde || 0;
+    desde = Number(desde);
+    
     var busqueda = req.params.busqueda;
     var tabla = req.params.tabla;
     var regex = new RegExp(busqueda, 'i');
@@ -20,15 +24,15 @@ app.get('/coleccion/:tabla/:buesqueda', (req, res) => {
 
     switch(tabla) {
         case 'usuarios':
-            promesa = buscarUsuario(busqueda, regex);
+            promesa = buscarUsuario(busqueda, regex, desde, hasta);
             break;
 
         case 'medicos':
-            promesa = buscarMedicos(busqueda, regex);
+            promesa = buscarMedicos(busqueda, regex, desde, hasta);
             break;
 
         case 'hospitales':
-            promesa = buscarHospitales(busqueda, regex);
+            promesa = buscarHospitales(busqueda, regex, desde, hasta);
             break;
 
         default:
@@ -42,7 +46,8 @@ app.get('/coleccion/:tabla/:buesqueda', (req, res) => {
     promesa.then( data => {
         res.status(200).json({
             ok: true,
-            [tabla]: data
+            total: data.total,
+            [tabla]: data.consulta
         });
     });
 });
@@ -53,62 +58,103 @@ app.get('/coleccion/:tabla/:buesqueda', (req, res) => {
 // ===================================================
 
 app.get('/todo/:busqueda', (req, res, next) => {
+    var hasta = 20;
+    var desde = req.query.desde || 0;
+    desde = Number(desde);
 
     var busqueda = req.params.busqueda;
     var regex = new RegExp(busqueda, 'i');
 
     Promise.all([
-        buscarHospitales(busqueda, regex),
-        buscarMedicos(busqueda, regex),
-        buscarUsuario(busqueda, regex)
+        buscarHospitales(busqueda, regex, desde, hasta),
+        buscarMedicos(busqueda, regex, desde, hasta),
+        buscarUsuario(busqueda, regex, desde, hasta)
     ]).then( respuestas => {
+        var total = 0;
+        if (respuestas[0].consulta.length > 0) {
+            total += Number(respuestas[0].total);
+        }
+        if (respuestas[1].consulta.length > 0) {
+            total += Number(respuestas[1].total);
+        }
+        if (respuestas[2].consulta.length > 0) {
+            total += Number(respuestas[2].total);
+        }
         res.status(200).json({
             ok: true,
-            hospitales: respuestas[0],
-            medicos: respuestas[1],
-            usuarios: respuestas[2]
+            total: total,
+            hospitales: respuestas[0].consulta,
+            medicos: respuestas[1].consulta,
+            usuarios: respuestas[2].consulta
         });
     });
    
 });
 
-function buscarHospitales(busqueda, regex) {
+function buscarHospitales(busqueda, regex, desde, hasta) {
     return new Promise((resolve, reject) => {
         Hospital.find({ nombre: regex })
             .populate('usuario', 'nombre email')
+            .skip(desde)
+            .limit(hasta)
             .exec((err, hospitales) => {
                 if(err) {
                     reject('Error al cargar hospitales', err);
                 } else {
-                    resolve(hospitales);
+                    Hospital.count({}, (err, num) => {
+                        var obj = {
+                            consulta: hospitales,
+                            total: num
+                        };
+                        
+                        resolve(obj);
+                    });
                 }
         });
     });
 }
-function buscarMedicos(busqueda, regex) {
+function buscarMedicos(busqueda, regex, desde, hasta) {
     return new Promise((resolve, reject) => {
         Medico.find({ nombre: regex })
         .populate('usuario', 'nombre email')
         .populate('hospital')
+        .skip(desde)
+        .limit(hasta)
         .exec((err, medicos) => {
             if(err) {
                 reject('Error al cargar medicos', err);
             } else {
-                resolve(medicos);
+                Medico.count({}, (err, num) => {
+                    var obj = {
+                        consulta: medicos,
+                        total: num
+                    };
+                    
+                    resolve(obj);
+                });
             }
         });
     });
 }
 
-function buscarUsuario(busqueda, regex) {
+function buscarUsuario(busqueda, regex, desde, hasta) {
     return new Promise((resolve, reject) => {
         Usuario.find({}, 'nombre email role')
         .or([ {'nombre': regex}, {'email': regex} ])
+        .skip(desde)
+        .limit(hasta)
         .exec( (err, usuarios) => {
             if(err) {
                 reject('Error al cargar usuarios', err);
             } else {
-                resolve(usuarios);
+                Usuario.count({}, (err, num) => {
+                    var obj = {
+                        consulta: usuarios,
+                        total: num
+                    };
+                    
+                    resolve(obj);
+                });
             }
         });
     });
