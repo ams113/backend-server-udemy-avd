@@ -33,12 +33,44 @@ app.get('/', (req, res, next) => {
 
                 res.status(200).json({
                     ok: true,
-                    ospitales: hospitales,
+                    hospitales: hospitales,
                     total: num
                 });
             });
     });    
 } );
+
+// ===================================================
+//  Obtener hospital
+// ===================================================
+
+app.get('/:id', (req, res) => {
+    var id = req.params.id;
+
+    Hospital.findById(id)
+        .populate('usuario', 'nombre img email')
+        .exec((err, hospital) => {
+            if (err) {
+                return res.status(500).json({
+                     ok: false,
+                     msg: 'Error al buscar hospital',
+                     errors: err
+                });
+            }
+            if (!hospital) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: 'El hospital con el id ' + id + ' no existe',
+                    errors: {message: 'No existe un hospital con ese ID'}
+                });
+            }
+            res.status(200).json({
+                ok: true,
+                hospital:hospital
+            });
+        });
+
+});
 
 // ===================================================
 //  Actualizar Hospital
@@ -67,6 +99,7 @@ app.put('/:id', mAuth.verificaToken, (req, res) => {
 
         hospital.nombre = body.nombre;
         hospital.usuario = req.usuario._id;
+        console.log(hospital);
 
         hospital.save( (err, hospitalGuardado) => {
             if(err) {
@@ -97,6 +130,8 @@ app.post('/', mAuth.verificaToken, (req, res) => {
         nombre: body.nombre,
         usuario: req.usuario._id
     });
+
+    console.log(hospital);
 
     hospital.save( (err, hospitalGuardado) => {
         if(err) {
