@@ -46,7 +46,7 @@ app.get('/', (req, res, next) => {
 //  Actualizar usuario
 // ===================================================
 
-app.put('/:id', mAuth.verificaToken, (req, res) => {
+app.put('/:id', [mAuth.verificaToken, mAuth.verifyMyselfOrAdmin], (req, res) => {
 
     var id = req.params.id;
     var body = req.body;
@@ -126,7 +126,7 @@ app.post('/', (req, res) => {
 //  Borrar usuario
 // ===================================================
 
-app.delete('/:id', mAuth.verificaToken, (req, res) => {
+app.delete('/:id', [mAuth.verificaToken, mAuth.verificaAdminRole], (req, res) => {
 
     var id = req.params.id;
     

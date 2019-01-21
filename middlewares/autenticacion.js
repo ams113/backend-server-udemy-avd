@@ -20,3 +20,44 @@ exports.verificaToken = function (req, res, next) {
        
     });
 };
+
+// ===================================================
+//  Verificar Admin
+// ===================================================
+
+exports.verificaAdminRole = function (req, res, next) {
+
+    var usuario = req.usuario;
+
+    if ( usuario.role === 'ADMIN_ROLE' ) {
+        next();
+        return;
+    } else  {
+        return res.status(401).json({
+            ok: false,
+            msg: 'No tiene permisos',
+            errors: { message: 'Error de autorización necesita permisos' } 
+        });
+    }
+};
+
+// ===================================================
+//  Verificar así mismo
+// ===================================================
+
+exports.verifyMyselfOrAdmin = function (req, res, next) {
+
+    var usuario = req.usuario;
+    var id = req.params.id;
+
+    if ( usuario.role === 'ADMIN_ROLE' || usuario._id === id) {
+        next();
+        return;
+    } else  {
+        return res.status(401).json({
+            ok: false,
+            msg: 'No tiene permisos',
+            errors: { message: 'Error de autorización necesita permisos' } 
+        });
+    }
+};
